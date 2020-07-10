@@ -1,0 +1,25 @@
+\begin{sphinxtheindex}
+\let\bigletter\sphinxstyleindexlettergroup
+\let\spxpagem \sphinxstyleindexpagemain
+\let\spxentry \sphinxstyleindexentry
+\let\spxextra \sphinxstyleindexextra
+
+  \bigletter K
+  \item \spxentry{Keithley236}\spxextra{class in SimpleKeithley236.Keithley236}, \hyperpage{4}
+
+  \indexspace
+  \bigletter M
+  \item \spxentry{measurement}
+    \subitem \spxentry{module}, \hyperpage{2}
+  \item \spxentry{measurement()}\spxextra{in module measurement}, \hyperpage{2}
+  \item \spxentry{module}
+    \subitem \spxentry{measurement}, \hyperpage{2}
+    \subitem \spxentry{reset\_smu}, \hyperpage{3}
+
+  \indexspace
+  \bigletter R
+  \item \spxentry{read\_set\_times()}\spxextra{in module measurement}, \hyperpage{2}
+  \item \spxentry{reset\_smu}
+    \subitem \spxentry{module}, \hyperpage{3}
+
+\end{sphinxtheindex}
