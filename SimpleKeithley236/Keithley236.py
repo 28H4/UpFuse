@@ -143,7 +143,7 @@ class Keithley236:
                   "10nA": ["2", 1E-8],
                   "100nA": ["3", 1E-7],
                   "1µA": ["4", 1E-6],
-                  "10µA": ["5", 1E-8],
+                  "10µA": ["5", 1E-5],
                   "100µA": ["6", 1E-4],
                   "1mA": ["7", 1E-3],
                   "10mA": ["8", 1E-2],
@@ -322,10 +322,10 @@ class Keithley236:
         status = self._get_status_("machine status")
         return re.search(r"(T\d,\d,\d,\d)", status).group()
 
-    def impulse(self, voltage, duration):
+    def impulse(self, voltage, duration, compliance, measurement_range):
         """Applies the voltage [V] for the duration [s]."""
 
-        print("Start Impuls")
+        self._set_compliance_measurement_range_(compliance, measurement_range)
         self._set_bias_(voltage)
         self._set_trigger_(False)
         self._arm_trigger_(True)
@@ -333,16 +333,15 @@ class Keithley236:
         self._set_operate_(True)
         time.sleep(duration)
         self._set_operate_(False)
-        self._over_compliance_()
-        print("Ende Impuls")
 
-    def measurement(self, voltage, delay=1):
+    def measurement(self, voltage, compliance, measurement_range, delay=1):
         """
         Returns measured current [A] for the applied voltage [V].
         Before the measurement the voltage is applied for the duration
         specified by the delay [s].
         """
 
+        self._set_compliance_measurement_range_(compliance, measurement_range)
         self._set_bias_(voltage, delay=delay * 1000)
         self._set_trigger_(True)
         self._arm_trigger_(True)
@@ -353,6 +352,5 @@ class Keithley236:
         self._smu_.timeout = 1 * 1E3
         self._set_operate_(False)
         self._arm_trigger_(False)
-        self._over_compliance_()
 
         return measured_current
