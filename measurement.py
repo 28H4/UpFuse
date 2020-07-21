@@ -11,7 +11,7 @@ def read_set_times(file):
     """Returns the first column of an Excel file as list."""
 
     df = pd.read_excel(file, header=None)  # pylint: disable=C0103
-    df.iloc[:, 0] = df.iloc[:, 0] * 0.1
+    df.iloc[:, 0] = df.iloc[:, 0]
     return df.iloc[:, 0].tolist()
 
 

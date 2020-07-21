@@ -348,7 +348,7 @@ class Keithley236:
         self._set_output_data_format_("measure value")
         self._set_operate_(True)
         self._smu_.timeout = (delay + 1) * 1000
-        measured_current = float(self._smu_.query('H0'))
+        measured_current = self._smu_.query('H0').rstrip()
         self._smu_.timeout = 1 * 1E3
         self._set_operate_(False)
         self._arm_trigger_(False)
