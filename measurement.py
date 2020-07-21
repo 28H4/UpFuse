@@ -15,6 +15,19 @@ def read_set_times(file):
     return df.iloc[:, 0].tolist()
 
 
+def store_data(file, data):
+    """
+    Appends dict to csv-file. Attached lines consist of "key,value".
+    :param file: str
+        Path t output file.
+    :param data: dict
+        dict to be saved.
+    """
+    with open(file, "a") as myfile:
+        for key, value in data.items():
+            myfile.write(f"{key},{value}\n")
+
+
 def measurement(file_set_times, **kwargs):
     """
     Performs measurements for the characterization of nanoionic memories using
