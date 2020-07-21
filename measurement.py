@@ -1,5 +1,5 @@
 """Script to perform measurements for the characterization of nanoionic devices."""
-
+import datetime
 import time
 
 import pandas as pd
@@ -28,7 +28,7 @@ def store_data(file, data):
             myfile.write(f"{key},{value}\n")
 
 
-def measurement(file_set_times, **kwargs):
+def measurement(file_set_times, output_file, **kwargs):
     """
     Performs measurements for the characterization of nanoionic memories using
     a Keihtley 236.
@@ -37,6 +37,8 @@ def measurement(file_set_times, **kwargs):
     ----------
     :param file_set_times: str
         The file location of an Excel file containing the individual set times.
+    :param output_file: str
+        File paths of the output file (settings and measurement data are attached).
     :key gpib_address: int
         GPIB adress of the Keihtley 236. (Default is 16).
     :key compliance: str
@@ -57,20 +59,30 @@ def measurement(file_set_times, **kwargs):
         Applied voltage [V] during the set step. (Default value is 1).
     """
 
+    timestamp_now = datetime.datetime.now().strftime("%d/%m/%y %H:%M")
+    store_data(output_file, {"start time": timestamp_now})
+    store_data(output_file, kwargs)
+
     set_times = read_set_times(file_set_times)
 
     smu = Keithley236(kwargs.get('gpib_address', 16),
                       kwargs.get('compliance', '1E-9'),
                       kwargs.get('measurement_range', '1nA'))
 
-    smu.measurement(kwargs.get('measurement_voltage', 0.1),
-                    kwargs.get('measurement_delay', 30))
+    current = smu.measurement(kwargs.get('measurement_voltage', 0.1),
+                              kwargs.get('measurement_delay', 30))
+
+    store_data(output_file, {"0": current})
 
     for set_time in set_times:
         smu.impulse(kwargs.get('set_voltage', 1), set_time)
-        smu.measurement(kwargs.get('measurement_voltage', 0.1),
-                        kwargs.get('measurement_delay', 30))
+        current = smu.measurement(kwargs.get('measurement_voltage', 0.1),
+                                  kwargs.get('measurement_delay', 30))
+        store_data(output_file, {set_time: current})
         time.sleep(kwargs.get('rest_period', 120))
+
+    timestamp_now = datetime.datetime.now().strftime("%d/%m/%y %H:%M")
+    store_data(output_file, {"start time": timestamp_now})
 
 
 if __name__ == '__main__':
@@ -84,4 +96,4 @@ if __name__ == '__main__':
                          "compliance": "1E-3",
                          }
 
-    measurement(file_set_times='set_zeit_log.xls', **keyword_arguments)
+    measurement('set_zeit_log.xls', "test.csv", **keyword_arguments)
