@@ -40,7 +40,8 @@ class Keithley236:
 
     def __del__(self):
         self._factory_reset_()
-        self._set_operate_(False)
+        self._set_integration_time_("20ms")
+        self._set_filter_(32)
         self._smu_.close()
 
     def _arm_trigger_(self, mode):
