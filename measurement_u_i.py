@@ -21,8 +21,8 @@ def single_measurement(smu, file, start_time):
 
 def interval_measurement(smu, file, start_time, time_interval):
     """
-    Starts an event loop which periodically triggers a measurement. The measurement
-    results are append to the file (passed time, measurement).
+    Starts an event loop which periodically triggers a measurement.
+    The measurement results are append to the file (passed time, measurement).
     """
 
     loop = task.LoopingCall(single_measurement, *(smu, file, start_time))
@@ -46,7 +46,8 @@ def continuous_measurement(file, **kwargs):
         e.g "1E-9" for 1nA. (Default value is 1E-10).
     :key set_range: str
         Measurement range. Allowed values are: Auto, 1nA,
-        10nA, 100nA, 1µA, 10µA, 100µA, 1mA, 10mA and 100mA. (Default value is 1nA).
+        10nA, 100nA, 1µA, 10µA, 100µA, 1mA, 10mA and 100mA.
+        (Default value is 1nA).
     """
     smu = Keithley236(kwargs.get('gpib_address', 16),
                       kwargs.get('compliance', "1E-10"),
@@ -65,7 +66,7 @@ def continuous_measurement(file, **kwargs):
                                           )
     measurement_thread.start()
 
-    duration = kwargs.get('n_measurements', 10) * kwargs.get('time_interval', 2)
+    duration = kwargs.get('n_measurements', 10)*kwargs.get('time_interval', 2)
     end_timestamp = time.time() + duration
     while time.time() < end_timestamp:
         time.sleep(1)
