@@ -4,6 +4,7 @@ import time
 
 import pandas as pd
 
+
 from SimpleKeithley236.Keithley236 import Keithley236
 
 
@@ -109,4 +110,6 @@ if __name__ == '__main__':
                          "set_compliance": "1E-5",
                          }
 
-    measurement('set_zeit_log.xls', "test.csv", **keyword_arguments)
+    measurement(r'input_files/set_zeit_log.xls',
+                r"output_files/test.csv",
+                **keyword_arguments)

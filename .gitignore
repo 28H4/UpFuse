@@ -1,0 +1,5 @@
+/output_files/*.csv
+
+!input_files/
+/input_files/*.xls
+!input_files/set_zeit_log.xls
