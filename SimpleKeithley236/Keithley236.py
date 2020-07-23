@@ -156,9 +156,12 @@ class Keithley236:
                              f' changed. Invalid input. Possible input '
                              f'values are: {", ".join(ranges.keys())}.')
 
-        if not 0 < float(compliance_level) <= ranges[measurement_range][1]:
-            raise ValueError(f'The compliance voltage {compliance_level}A must be '
-                             f'within the measurement source_range {measurement_range}.')
+        if compliance_level is not None:
+            if not 0 < float(compliance_level) <= ranges[measurement_range][1]:
+                raise ValueError(f'The compliance voltage {compliance_level}A must be '
+                                 f'within the measurement source_range {measurement_range}.')
+        else:
+            compliance_level = ""
 
         self._set_trigger_(False)
         self._smu_.write(f'L{compliance_level},{ranges[measurement_range][0]}')

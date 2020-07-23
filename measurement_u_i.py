@@ -62,6 +62,9 @@ def continuous_measurement(results_file, **kwargs):
         10nA, 100nA, 1µA, 10µA, 100µA, 1mA, 10mA and 100mA.
         (Default value is 1nA).
     """
+
+    store_data(results_file, kwargs)
+
     smu = Keithley236(kwargs.get('gpib_address', 16),
                       kwargs.get('compliance', "1E-10"),
                       kwargs.get('range', "1nA"),
@@ -82,11 +85,11 @@ def continuous_measurement(results_file, **kwargs):
 
 if __name__ == '__main__':
     keyword_arguments = {"voltage": 0.1,
-                         "range": "100nA",
-                         "compliance": "5E-8",
+                         "range": "Auto",
+                         "compliance": None,
                          "n_measurements": 10,
-                         "time_interval": 2,
-                         "delay": 1,
+                         "time_interval": 5,
+                         "delay": 5,
                          # "gpib_address": 16,
                          }
 
