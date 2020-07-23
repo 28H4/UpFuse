@@ -91,7 +91,7 @@ class Keithley236:
         if self._smu_.stb == 128:
             raise Exception("Over compliance.")
 
-    def _set_bias_(self, level, source_range="110V", delay=100):
+    def _set_bias_(self, level, source_range="1.1V", delay=100):
         """
         Sets the bias voltage, the range and the delay
         (for the source-delay-measurement-cycle).
@@ -99,9 +99,10 @@ class Keithley236:
         :param level: float
             Specifies the de bias voltage [V].
         :param source_range: str
-            Selects the bias range. Allowed values are: auto, 1.1V, 11V and 110V.
+            Selects the bias range. Allowed values are: auto, 1.1V, 11V and
+            110V. (Default value is 1.1V)
         :param delay: float
-            The delay in milliseconds (0 to 65000).
+            The delay in milliseconds (0 to 65000). (Default value is 100)
         """
 
         if self._get_source_and_function_() != 'V-I-dc':
