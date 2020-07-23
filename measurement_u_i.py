@@ -9,36 +9,49 @@ from SimpleKeithley236.Keithley236 import Keithley236
 from measurement import store_data
 
 
+class LoopingCallWithCounter:
+    """Wrapper class to count the event loops and stop the loop after n repetitions."""
+    def __init__(self, count, f, *args):
+        self.i = 0
+        def wrapper():
+            if self.i >= count:
+                self.lc.stop()
+                reactor.stop()
+            else:
+                f(*args)
+                self.i += 1
+        self.lc = task.LoopingCall(wrapper)
+
+
 def single_measurement(smu, file, start_time):
     """
     Trigges a single measurement and appends the result (passed time,
     measurement result) to the specified file.
     """
-
     current = smu._query_("H0").rstrip()
     store_data(file, {time.time() - start_time: current})
 
 
-def interval_measurement(smu, file, start_time, time_interval):
+def interval_measurement(n, t, *measurement_args):
     """
     Starts an event loop which periodically triggers a measurement.
     The measurement results are append to the file (passed time, measurement).
     """
-
-    loop = task.LoopingCall(single_measurement, *(smu, file, start_time))
-    loop.start(time_interval)
-    reactor.run(installSignalHandlers=0)
+    LoopingCallWithCounter(n, single_measurement, *measurement_args).lc.start(t)
 
 
-def continuous_measurement(file, **kwargs):
+def continuous_measurement(results_file, **kwargs):
     """
-
-    :param file:
+    Starts an event loop after the delay, which performs n-measurements at
+    intervals of t and appends the measurement data (time since the beginning
+    of the delay, current intensity measurement value) to the file.
+    :param results_file:
+    :key gpib_address: int
+        GPIB adress of the Keihtley 236. (Default is 16).
     :key n_measurements:int
         Number of measurements which will be performed. (Default is 10)
     :key time_interval: float
-        Period of the measurements [s]. (Default is 2). A to small value will
-        result in a trigger overrun.
+        Period of the measurements [s]. (Default is 2).
     :key measurement_voltage: float
         Applied voltage [V]. (Default value is 0.01).
     :key compliance: str
@@ -55,23 +68,16 @@ def continuous_measurement(file, **kwargs):
                       )
 
     smu._set_bias_(kwargs.get('voltage', 0.01))
-    smu._write_("T1,4,4,0")
     smu._set_trigger_(True)
     smu._set_output_data_format_("measure value")
     smu._set_operate_(True)
+    start_time = time.time()
+    time.sleep(kwargs.get("delay", 1))
 
-    measurement_thread = threading.Thread(target=interval_measurement,
-                                          args=(smu, file, time.time(),
-                                                kwargs.get("time_interval", 2))
-                                          )
-    measurement_thread.start()
-
-    duration = kwargs.get('n_measurements', 10)*kwargs.get('time_interval', 2)
-    end_timestamp = time.time() + duration
-    while time.time() < end_timestamp:
-        time.sleep(1)
-
-    reactor.stop()
+    reactor.callWhenRunning(interval_measurement,
+                            *(kwargs.get("n_measurements", 5), kwargs.get("time_interval", 2)),
+                            *(smu, results_file, start_time))
+    reactor.run()
 
 
 if __name__ == '__main__':
@@ -80,6 +86,7 @@ if __name__ == '__main__':
                          "compliance": "5E-8",
                          "n_measurements": 10,
                          "time_interval": 2,
+                         "delay": 1,
                          # "gpib_address": 16,
                          }
 
