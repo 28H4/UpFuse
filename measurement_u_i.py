@@ -1,5 +1,5 @@
 """Script to perform periodic measurements with constant applied voltage."""
-
+import datetime
 import threading
 import time
 
@@ -63,6 +63,8 @@ def continuous_measurement(results_file, **kwargs):
         (Default value is 1nA).
     """
 
+    timestamp_now = datetime.datetime.now().strftime("%d/%m/%y %H:%M")
+    store_data(results_file, {"start time": timestamp_now})
     store_data(results_file, kwargs)
 
     smu = Keithley236(kwargs.get('gpib_address', 16),
@@ -82,13 +84,16 @@ def continuous_measurement(results_file, **kwargs):
                             *(smu, results_file, start_time))
     reactor.run()
 
+    timestamp_now = datetime.datetime.now().strftime("%d/%m/%y %H:%M")
+    store_data(results_file, {"completion time": timestamp_now})
+
 
 if __name__ == '__main__':
     keyword_arguments = {"voltage": 0.1,
                          "range": "Auto",
                          "compliance": None,
-                         "n_measurements": 10,
-                         "time_interval": 5,
+                         "n_measurements": 5,
+                         "time_interval": 2,
                          "delay": 5,
                          # "gpib_address": 16,
                          }
