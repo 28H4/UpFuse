@@ -1,59 +1,67 @@
 """Script to perform periodic measurements with constant applied voltage."""
 import datetime
-import threading
 import time
 
-from twisted.internet import task, reactor
+import pandas as pd
 
 from SimpleKeithley236.Keithley236 import Keithley236
 from measurement import store_data
 
 
-class LoopingCallWithCounter:
-    """Wrapper class to count the event loops and stop the loop after n repetitions."""
-    def __init__(self, count, f, *args):
-        self.i = 0
-        def wrapper():
-            if self.i >= count:
-                self.lc.stop()
-                reactor.stop()
-            else:
-                f(*args)
-                self.i += 1
-        self.lc = task.LoopingCall(wrapper)
-
-
-def single_measurement(smu, file, start_time):
+def single_measurement(smu, output_file, start_time):
     """
     Trigges a single measurement and appends the result (passed time,
     measurement result) to the specified file.
     """
     current = smu._query_("H0").rstrip()
-    store_data(file, {time.time() - start_time: current})
+    store_data(output_file, {time.time() - start_time: current})
 
 
-def interval_measurement(n, t, *measurement_args):
+def interval_measurement(n, period, measurement_args, measurement_delay=1.10):
     """
-    Starts an event loop which periodically triggers a measurement.
-    The measurement results are append to the file (passed time, measurement).
+    Performs n measurements at intervals of period.
+    The measurement results are append to the output_file (passed time, measurement).
+
+    :param n: int
+        Number of measurements.
+    :param period: float
+        Time interval between measurements [s].
+    :param measurement_args: iterable
+        List of smu, output_file and start_time which will be passed to
+        single_measurement().
+    :key measurement_delay: float, optional, default=1.10
+        The measurement is triggered at a time interval of "measurement_delay"
+        before the end of the measurement period to compensate for the duration
+        of the measurements.
     """
-    LoopingCallWithCounter(n, single_measurement, *measurement_args).lc.start(t)
+
+    performed_runs = 0
+
+    while performed_runs < n:
+        start_time_interval = time.time()
+        time.sleep(period - measurement_delay)
+        single_measurement(*measurement_args)
+        try:
+            time.sleep(time.time() - start_time_interval - period)
+        except ValueError:
+            pass
+
+        performed_runs += 1
 
 
-def continuous_measurement(results_file, **kwargs):
+def continuous_measurement(input_file, results_file, **kwargs):
     """
     Starts an event loop after the delay, which performs n-measurements at
     intervals of t and appends the measurement data (time since the beginning
     of the delay, current intensity measurement value) to the file.
-    :param results_file:
+
+    :param input_file: str
+        File path of an Excel file from whose first worksheet the pattern of
+        the measurement (voltage, period duration, repetitions) is to be read.
+    :param results_file: str
+        File path for the output file e.g. "output_files/test.csv".
     :key gpib_address: int
         GPIB adress of the Keihtley 236. (Default is 16).
-    :key n_measurements:int
-        Number of measurements which will be performed. (Default is 10)
-    :key time_interval: float
-        Period of the measurements [s]. (Default is 2).
-    :key measurement_voltage: float
-        Applied voltage [V]. (Default value is 0.01).
     :key compliance: str
         Compliance Value [A]. Scientific notation required
         e.g "1E-9" for 1nA. (Default value is 1E-10).
@@ -72,30 +80,31 @@ def continuous_measurement(results_file, **kwargs):
                       kwargs.get('range', "1nA"),
                       )
 
-    smu._set_bias_(kwargs.get('voltage', 0.01))
     smu._set_trigger_(True)
-    smu._set_output_data_format_("measure value")
-    smu._set_operate_(True)
-    start_time = time.time()
-    time.sleep(kwargs.get("delay", 1))
+    smu._set_output_data_format_("source and measure value")
 
-    reactor.callWhenRunning(interval_measurement,
-                            *(kwargs.get("n_measurements", 5), kwargs.get("time_interval", 2)),
-                            *(smu, results_file, start_time))
-    reactor.run()
+    measurement_settings = pd.read_excel(input_file,
+                                         header=0,
+                                         names=('voltage', 'time_interval', 'repeatings'),
+                                         usecols="A:C").dropna()  # pylint: disable=C0103
+
+    start_time = time.time()
+    smu._set_operate_(True)
+    for index, row in measurement_settings.iterrows():
+        smu._set_bias_(row.voltage)
+        interval_measurement(row.repeatings, row.time_interval, (smu, results_file, start_time))
 
     timestamp_now = datetime.datetime.now().strftime("%d/%m/%y %H:%M")
     store_data(results_file, {"completion time": timestamp_now})
 
 
 if __name__ == '__main__':
-    keyword_arguments = {"voltage": 0.1,
-                         "range": "Auto",
-                         "compliance": None,
-                         "n_measurements": 5,
-                         "time_interval": 2,
-                         "delay": 5,
-                         # "gpib_address": 16,
-                         }
+    keyword_arguments = {
+        "range": "Auto",
+        "compliance": None,
+        # "gpib_address": 16,
+    }
 
-    continuous_measurement(r"output_files/test.csv", **keyword_arguments)
+    continuous_measurement(r'input_files/input_continuous_measurement.xlsx',
+                           r"output_files/test.csv",
+                           **keyword_arguments)
