@@ -3,4 +3,4 @@
 from SimpleKeithley236.Keithley236 import Keithley236
 
 if __name__ == '__main__':
-    smu = Keithley236(16, '1E-3', '1mA')
+    smu = Keithley236(16, 'Auto', None)
