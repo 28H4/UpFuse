@@ -3,6 +3,7 @@ import datetime
 import time
 
 import pandas as pd
+from tqdm import tqdm
 
 from SimpleKeithley236.Keithley236 import Keithley236
 from measurement import store_data
@@ -17,7 +18,7 @@ def single_measurement(smu, output_file, start_time):
     store_data(output_file, {time.time() - start_time: current})
 
 
-def interval_measurement(n, period, measurement_args, measurement_delay=1.10):
+def interval_measurement(n, period, pbar, measurement_args, measurement_delay=1.10):
     """
     Performs n measurements at intervals of period.
     The measurement results are append to the output_file (passed time, measurement).
@@ -46,6 +47,7 @@ def interval_measurement(n, period, measurement_args, measurement_delay=1.10):
         except ValueError:
             pass
 
+        pbar.update()
         performed_runs += 1
 
 
@@ -90,9 +92,15 @@ def continuous_measurement(input_file, results_file, **kwargs):
 
     start_time = time.time()
     smu._set_operate_(True)
-    for index, row in measurement_settings.iterrows():
-        smu._set_bias_(row.voltage)
-        interval_measurement(row.repeatings, row.time_interval, (smu, results_file, start_time))
+
+    total_measurements = int(measurement_settings.repeatings.sum())
+    pbar_format = '{l_bar}{bar} | performed measurements {n_fmt}/{total_fmt} | ' \
+                  'elapsed time {elapsed} | remaining time {remaining} | {rate_fmt}'
+
+    with tqdm(total=total_measurements, bar_format=pbar_format, unit='measurement') as pbar:
+        for index, row in measurement_settings.iterrows():
+            smu._set_bias_(row.voltage)
+            interval_measurement(row.repeatings, row.time_interval, pbar, (smu, results_file, start_time))
 
     timestamp_now = datetime.datetime.now().strftime("%d/%m/%y %H:%M")
     store_data(results_file, {"completion time": timestamp_now})
